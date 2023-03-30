@@ -137,6 +137,58 @@ select distinct C.CompanyName, C.Phone
         on P.CategoryID = C2.CategoryID
     where CategoryName = 'Confections';
 
+-- Wybierz nazwy i numery telefonów klientów, którzy nie kupowali produków z kategorii ‘Confections’
+
+SELECT Customers.CompanyName, Customers.Phone
+FROM Customers
+    LEFT OUTER JOIN Orders O on Customers.CustomerID = O.CustomerID
+    LEFT OUTER JOIN [Order Details] "[O D]" on O.OrderID = "[O D]".OrderID
+    LEFT OUTER JOIN Products P on P.ProductID = "[O D]".ProductID
+    LEFT OUTER JOIN Categories C on C.CategoryID = P.CategoryID AND (C.CategoryName = 'Confections')
+        GROUP BY Customers.CustomerID, Customers.CompanyName, Customers.Phone
+        HAVING COUNT(C.CategoryID) = 0;
+
+select CompanyName, Phone
+from Customers C
+where C.CustomerID not in (select CustomerID
+from Orders O
+inner join [Order Details] [O D] on O.OrderID = [O D].OrderID
+inner join Products P on P.ProductID = [O D].ProductID
+inner join Categories C2 on C2.CategoryID = P.CategoryID
+where C2.CategoryName = 'Confections');
+
+
+--  Wybierz nazwy i numery telefonów klientów, którzy nie kupowali produktów z kategorii ‘Confections’
+
+select distinct C.CompanyName, C.Phone
+    from Orders O
+    inner join [Order Details] OD on O.OrderID = OD.OrderID
+    inner join Products P on OD.ProductID = P.ProductID
+    inner join Categories CC on P.CategoryID = CC.CategoryID and CC.CategoryName = 'Confections'
+    right join Customers C on O.CustomerID = C.CustomerID
+    where O.CustomerID is null;
+
+select * from dbo.Customers;
+
+-- Wybierz nazwy i numery telefonów klientów, którzy w 1997 kupowali produkty z kategorii ‘Confections’
+
+select distinct C.CompanyName, C.Phone
+    from [Order Details] OD inner join Orders O
+    on O.OrderID = OD.OrderID inner join Customers C
+    on O.CustomerID = C.CustomerID inner join Products P
+    on P.ProductID = OD.ProductID inner join Categories C2
+        on P.CategoryID = C2.CategoryID
+    where CategoryName = 'Confections' and year(O.OrderDate) = '1997';
+
+--  Wybierz nazwy i numery telefonów klientów, którzy w 1997 nie kupowali produktów z kategorii ‘Confections’
+
+select distinct C.CompanyName, C.Phone
+    from Orders O
+    inner join [Order Details] OD on O.OrderID = OD.OrderID and year(OrderDate) = '1997'
+    inner join Products P on OD.ProductID = P.ProductID
+    inner join Categories CC on P.CategoryID = CC.CategoryID and CC.CategoryName = 'Confections'
+    right join Customers C on O.CustomerID = C.CustomerID
+    where O.CustomerID is null;
 
 use library;
 
@@ -263,12 +315,12 @@ use Northwind;
 -- 1. Dla każdego zamówienia podaj łączną liczbę zamówionych jednostek towaru oraz
 -- nazwę klienta.
 
-select O.OrderID, CompanyName, sum(Quantity) as 'sum_quantity'
-    from Orders as O inner join [Order Details] as Od
-        on Od.OrderID = O.OrderID
-    inner join Customers as C
-        on O.CustomerID = C.CustomerID
-    group by O.OrderID, CompanyName;
+select O.OrderID, CompanyName, FirstName, LastName, sum(Quantity) as 'sum_quantity'
+    from Orders as O
+    inner join [Order Details] as Od on Od.OrderID = O.OrderID
+    inner join Customers as C on O.CustomerID = C.CustomerID
+    inner join Employees E on O.EmployeeID = E.EmployeeID
+    group by O.OrderID, CompanyName, FirstName, LastName;
 
 -- 2. Zmodyfikuj poprzedni przykład, aby pokazać tylko takie zamówienia, dla których
 -- łączna liczbę zamówionych jednostek jest większa niż 250
@@ -318,7 +370,7 @@ select O.OrderID, C.CompanyName, cast(sum(Quantity*UnitPrice*(1-Discount)) as de
 
 
 -- 1. Dla każdej kategorii produktu (nazwa), podaj łączną liczbę zamówionych przez
--- klientów jednostek towarów z tek kategorii.
+-- klientów jednostek towarów z tej kategorii.
 
 select C.CategoryName, sum(Quantity) as sum
 from [Order Details]
@@ -365,20 +417,28 @@ order by sum(Quantity);
 
 -- 4. Dla każdego zamówienia podaj jego wartość uwzględniając opłatę za przesyłkę
 
-select OD.OrderID, cast(sum(UnitPrice * Quantity * (1 - Discount) + Freight) as decimal (10, 2))
+select OD.OrderID, cast(sum(UnitPrice * Quantity * (1 - Discount)) + Freight as decimal (10, 2))
     as TotalValue
 from [Order Details] OD
 inner join Orders O
     on OD.OrderID = O.OrderID
-group by OD.OrderID;
+group by OD.OrderID, Freight;
+
+select sum(UnitPrice* Quantity * (1 - Discount) )
+from [Order Details]
+where OrderID = 10250
+group by OrderID;
+
+select Freight
+from dbo.Orders
+where OrderID =10250;
 
 -- 1.Dla każdego przewoźnika (nazwa) podaj liczbę zamówień które przewieźli w 1997r
 
-select CompanyName, count(*) as number_of_orders
+select CompanyName, count(OrderID) as number_of_orders
 from Shippers as S
-inner join Orders O
-    on S.ShipperID = O.ShipVia
-where year(ShippedDate) = '1997'
+left join Orders O on S.ShipperID = O.ShipVia
+and year(ShippedDate) = '1997'
 group by ShipperID, CompanyName;
 
 -- 2.Który z przewoźników był najaktywniejszy (przewiózł największą liczbę
@@ -435,18 +495,6 @@ order by TotalValue;
 -- a) którzy mają podwładnych
 -- b) którzy nie mają podwładnych
 
--- a)
-
--- 2. Napisz polecenie, które wyświetla pracowników, którzy nie mają podwładnych
--- (baza northwind)
-
-select ReportsTo, * from dbo.Employees;
-
-select E.FirstName, E.LastName
-    from Employees as E left outer join Employees as Ep
-        on E.EmployeeID = Ep.ReportsTo
-    where Ep.EmployeeID is not null;
-
 -- a
 
 select distinct E.FirstName, E.LastName, cast(sum(UnitPrice * Quantity * (1 -Discount)) as decimal (10, 2))
@@ -486,8 +534,18 @@ left outer join Orders O
     on C.CustomerID = O.CustomerID and year(O.OrderDate) = '1997'
 group by C.CustomerID, CompanyName
 
+--  Dla każdego klienta podaj liczbę zamówień w każdym z z lat 1997, 98
+
+select C.CustomerID, CompanyName, year(OrderDate) as year, count(O.OrderID) as number_of_orders
+from Customers C
+left outer join Orders O
+    on C.CustomerID = O.CustomerID and year(OrderDate) in (1997, 1998)
+group by C.CustomerID, CompanyName, year(OrderDate);
+
 -- Dla każdego klienta podaj liczbę zamówień w
 -- każdym z miesięcy 1997, 98
+
+ -- DODAĆ DLA KAŻDEGO MIESIĄCA
 
 select C.CustomerID, CompanyName, year(OrderDate) as year, month(OrderDate) as month,
        count(O.OrderID) as number_of_orders
@@ -495,6 +553,16 @@ from Customers C
 left outer join Orders O
     on C.CustomerID = O.CustomerID and year(OrderDate) in (1997, 1998)
 group by C.CustomerID, CompanyName, year(OrderDate), month(OrderDate);
+
+
+select C.CustomerID, CompanyName, year(OrderDate) as year, month(OrderDate) as month,
+       count(O.OrderID) as number_of_orders
+from Customers C
+left outer join Orders O
+    on C.CustomerID = O.CustomerID and year(OrderDate) in (1997, 1998)
+group by C.CustomerID, CompanyName, year(OrderDate), month(OrderDate);
+
+select 1, 2, 3
 
 -- Wybierz nazwy i numery telefonów klientów , którym w 1997 roku przesyłki dostarczała firma ‘United Package’
 
