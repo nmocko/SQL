@@ -147,18 +147,38 @@ where not exists (
 
 -- 4.Podaj produkty kupowane przez więcej niż jednego klienta
 
-select distinct ProductID
-from [Order Details] as OD
-where ProductID in (
-    select ProductID
-    from Orders as O
-    where CustomerID in (
-        select CustomerID
-        from Orders as O2
-        group by CustomerID
-        having count(*) > 1
-        )
-    );
+select T.ProductName, T.ProductID
+    from (select P.ProductName, P.ProductID
+              from dbo.[Order Details] as Od
+              inner join dbo.Orders O on O.OrderID = Od.OrderID
+              inner join dbo.Products P on P.ProductID = Od.ProductID
+                group by P.ProductName, P.ProductID
+                having count(O.CustomerID) > 40) as T
+    order by T.ProductID;
+
+
+-- meine
+select T.ProductID
+    from (
+    select distinct OD.ProductID, CustomerID
+    from [Order Details] as OD
+    inner join Orders O
+        on OD.OrderID = O.OrderID
+    ) as T
+group by T.ProductID
+having count(T.ProductID) > 40
+order by T.ProductID;
+
+
+select distinct OD.ProductID, CustomerID
+    from [Order Details] as OD
+    inner join Orders O
+        on OD.OrderID = O.OrderID
+    inner join dbo.Products P on P.ProductID = Od.ProductID
+where OD.ProductID = 2
+order by OD.ProductID, CustomerID;
+
+
 
 -- Ćwiczenie 5
 
@@ -209,7 +229,6 @@ from Employees as E
 where EmployeeID in (
         select ReportsTo
         from Employees
-        where ReportsTo is not null
           );
 
 -- b) którzy nie mają podwładnych
@@ -272,3 +291,44 @@ where EmployeeID not in (
         from Employees as E2
         where E2.ReportsTo is not null
           );
+
+-- zamówienia których wszystkie pozycje były ze zniżką
+
+select OrderID
+from Orders
+where OrderID not in (
+    select OrderID
+    from [Order Details]
+    where Discount = 0
+    );
+
+-- zamówienia których wszystkie pozycje były bez zniżki
+
+select OrderID
+from Orders
+where OrderID not in (
+    select OrderID
+    from [Order Details]
+    where Discount != 0
+    );
+
+
+-- zamówienia których co najmniej jedna pozycje były bez zniżki
+
+select OrderID
+from Orders
+where OrderID in (
+    select OrderID
+    from [Order Details]
+    where Discount = 0
+    );
+
+-- zamówienia których co najmniej jedna pozycje była ze zniżką
+
+select OrderID
+from Orders
+where OrderID in (
+    select OrderID
+    from [Order Details]
+    where Discount != 0
+    );

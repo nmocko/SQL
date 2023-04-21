@@ -258,6 +258,21 @@ from adult a
     left outer join loan l on a.member_no = l.member_no
 where birth_date < '01-01-1996' and l.member_no is null;
 
+
+select distinct m.firstname,
+                m.lastname,
+                a.street,
+                a.city,
+                a.state,
+                a.zip
+from member m
+         inner join adult a
+                    on m.member_no = a.member_no
+         inner join juvenile j
+                    on a.member_no = j.adult_member_no
+         inner join loan l on m.member_no = l.member_no
+where j.birth_date < '1996-01-01';
+
 -- 1. Napisz polecenie które zwraca imię i nazwisko (jako pojedynczą kolumnę –
 -- name), oraz informacje o adresie: ulica, miasto, stan kod (jako pojedynczą
 -- kolumnę – address) dla wszystkich dorosłych członków biblioteki
