@@ -560,7 +560,6 @@ group by C.CustomerID, CompanyName, year(OrderDate);
 -- Dla każdego klienta podaj liczbę zamówień w
 -- każdym z miesięcy 1997, 98
 
- -- DODAĆ DLA KAŻDEGO MIESIĄCA
 
 select C.CustomerID, CompanyName, year(OrderDate) as year, month(OrderDate) as month,
        count(O.OrderID) as number_of_orders
@@ -569,15 +568,29 @@ left outer join Orders O
     on C.CustomerID = O.CustomerID and year(OrderDate) in (1997, 1998)
 group by C.CustomerID, CompanyName, year(OrderDate), month(OrderDate);
 
+ -- DLA KAŻDEGO MIESIĄCA
 
-select C.CustomerID, CompanyName, year(OrderDate) as year, month(OrderDate) as month,
-       count(O.OrderID) as number_of_orders
-from Customers C
-left outer join Orders O
-    on C.CustomerID = O.CustomerID and year(OrderDate) in (1997, 1998)
-group by C.CustomerID, CompanyName, year(OrderDate), month(OrderDate);
+with rec as
+(
+select 1 as x
+union all
+select  x+1 from rec where x<12
+),
+year as (
+    select 1997 as y
+    union all
+    select y+1 from year where y < 1998
+)
+select C.CustomerID, C.CompanyName, year.y, rec.x, count(O.OrderID) as number_of_orders
+from Customers as C
+cross join year
+cross join rec
+left join Orders as O on C.CustomerID = O.CustomerID and year(OrderDate) = year.y and month(OrderDate) = rec.x
+group by C.CustomerID, C.CompanyName, year.y, rec.x
+order by C.CustomerID, C.CompanyName, year.y, rec.x;
 
-select 1, 2, 3
+
+
 
 -- Wybierz nazwy i numery telefonów klientów , którym w 1997 roku przesyłki dostarczała firma ‘United Package’
 
