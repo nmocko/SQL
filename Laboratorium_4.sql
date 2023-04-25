@@ -42,10 +42,6 @@ on C.CustomerID = O.CustomerID and year(orderdate) = '1997'
 where O.CustomerID is null;
 
 
-
-
-
-
 -- 4. Wybierz nazwy i numery telefonów dostawców, dostarczających produkty,
 -- których aktualnie nie ma w magazynie
 
@@ -526,7 +522,7 @@ group by E.EmployeeID, E.FirstName, E.LastName, E2.EmployeeID;
 
 -- b
 
-select E.FirstName, E.LastName, cast(sum(UnitPrice * Quantity * (1 -Discount)) as decimal (10, 2))
+select E.EmployeeID, E.FirstName, E.LastName, cast(sum(UnitPrice * Quantity * (1 -Discount)) as decimal (10, 2))
     as TotalValue
 from Employees as E
 left outer join Employees as E2
@@ -589,9 +585,6 @@ left join Orders as O on C.CustomerID = O.CustomerID and year(OrderDate) = year.
 group by C.CustomerID, C.CompanyName, year.y, rec.x
 order by C.CustomerID, C.CompanyName, year.y, rec.x;
 
-
-
-
 -- Wybierz nazwy i numery telefonów klientów , którym w 1997 roku przesyłki dostarczała firma ‘United Package’
 
 select distinct C.CustomerID, C.CompanyName, C.Phone
@@ -611,3 +604,4 @@ left outer join Orders O
 left outer join Shippers S
     on O.ShipVia = S.ShipperID and S.CompanyName = 'United Package'
 where S.ShipperID is null;
+

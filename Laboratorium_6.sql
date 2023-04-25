@@ -36,10 +36,8 @@ where CustomerID not in (
     where year(OrderDate) = 1997 and month(OrderDate) = 3
     );
 
+
 -- podaj nazwy klientów ktorym w marcu 1997 przesyłek nie przewoziła firma united package
-
--- !!!!!!!!!!!!!!!!!!!
-
 
 select distinct C.CustomerID, C.CompanyName
 from Customers C
@@ -56,6 +54,7 @@ where CustomerID not in (
     inner join Shippers S on Orders.ShipVia = S.ShipperID and S.CompanyName = 'United Package'
     where year(ShippedDate) = 1997 and month(ShippedDate) = 3
     );
+
 
 -- podaj nawy klientów którzy w marcu 1997 nie kupowali produków z kategorii confections
 
@@ -142,5 +141,3 @@ from [Order Details] as OD
 inner join Orders as O on OD.OrderID = O.OrderID
 right join rec on rec.x = year(OrderDate)
 group by rec.x;
-
-

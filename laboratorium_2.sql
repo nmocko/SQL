@@ -201,3 +201,6 @@ wartość kolumny title_no
 
 select  'The title is: ' + title + ', title number ' + cast(title_no as varchar)
 from title;
+
+select  concat('The title is: ', title, ', title number ', title_no)
+from title;
